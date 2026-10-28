@@ -92,20 +92,25 @@ INSERT INTO avaliacoes (id_produto, id_cliente, nota, comentario) VALUES
 
 -- 1
 
-SELECT max(preco), min(preco), avg(preco) from produtos;
+SELECT max(preco), min(preco), avg(preco) 
+from produtos;
 
 -- 2
--- CORRIGIR
 
-SELECT count(id_produto) from produtos where categoria is not null; 
+SELECT categorias.nome, COUNT(produtos.id)
+FROM categorias
+LEFT JOIN produtos ON categorias.id = produtos.categoria_id
+GROUP BY categorias.id, categorias.nome;
 
 -- 3
 
-SELECT clientes.nome, pedidos.id_pedido from clientes left join pedidos on clientes.id_cliente = pedidos.id_cliente;
+SELECT clientes.nome, pedidos.id_pedido 
+from clientes left join pedidos on clientes.id_cliente = pedidos.id_cliente;
 
 -- 4
 
-SELECT categoria, avg(preco) from produtos group by categoria having avg(preco) > 1000;
+SELECT categoria, avg(preco) 
+from produtos group by categoria having avg(preco) > 1000;
 
 -- 5
 
@@ -114,14 +119,35 @@ from produtos join itens_pedido on produtos.id_produto = itens_pedido.id_produto
 group by produtos.nome having sum(itens_pedido.quantidade);
 
 -- 6
--- CORRIGIR 
-SELECT cliente.nome, sum(itens_pedido.quantidade) 
-from produtos
-join itens_pedido on clientes.id_produto = itens_pedido.id_produto
-join pedidos on pedidos.id_pedido = itens_pedido.id_pedido 
-group by produtos.nome
-having count(itens_pedido.quantidade) > 1;
-
+SELECT clientes.nome, COUNT(pedidos.id) 
+FROM clientes
+INNER JOIN pedidos ON clientes.id = pedidos.cliente_id
+GROUP BY clientes.id, clientes.nome
+HAVING COUNT(pedidos.id) > 1;
 -- 7
 
-SELECT count(itens_pedido.quantidade), sum(quantidade * preco), categoria from produto join itens_pedido on itens_pedido.id
+SELECT categorias.nome,
+COALESCE(SUM(itens_pedido.quantidade), 0) AS total_itens,
+COALESCE(SUM(itens_pedido.quantidade * itens_pedido.preco_unitario), 0) AS faturamento_total
+FROM categorias
+LEFT JOIN produtos ON categorias.id = produtos.categoria_id
+LEFT JOIN itens_pedido ON produtos.id = itens_pedido.produto_id
+GROUP BY categorias.id, categorias.nome;
+
+-- 8 
+
+SELECT clientes.nome, COUNT(pedidos.id) AS quantidade_pedidos
+FROM clientes
+INNER JOIN pedidos ON clientes.id = pedidos.cliente_id
+GROUP BY clientes.id, clientes.nome
+HAVING COUNT(pedidos.id) > 1;
+
+-- 9 
+
+SELECT clientes.nome,
+COALESCE(SUM(pedidos.valor_total), 0) AS total_gasto
+FROM clientes
+LEFT JOIN pedidos
+ON clientes.id = pedidos.cliente_id
+AND pedidos.status IN ('Entregue', 'Processando')
+GROUP BY clientes.id, clientes.nome;
